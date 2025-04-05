@@ -1,0 +1,446 @@
+**************************************************************
+*                   SOUTHERN CROSS SBC                       *
+*                    MONITOR VER 1.8                         *
+*                      SYSTEM CALLS                          *
+**************************************************************
+
+This is the general form of programs to use the subroutine
+in the Monitor.
+
+; set up registers
+	LD A,nn
+	LD HL,nnnn
+	
+; system call
+	LD C,call number or call name
+	RST 30H
+	
+	INCLUDE		"SCM18_Include.asm" ; if using LD C,call name
+**************************************************************
+
+**************************************************************
+* MAIN - 0 - RESTART MONITOR                                 *
+**************************************************************
+RETURN TO MONITOR
+
+ENTRY : NONE
+
+**************************************************************
+* VERS - 1 - RETURNS MONITOR VERSION                         *
+**************************************************************
+RETURNS THE SOFTWARE VERSION NUMBER
+
+ENTRY : NONE
+EXIT : HL -> VERSION NUMBER STRING
+ACCA = BCD VERSION NUMBER D7-D4 = MAJOR, D3-D0 MINOR
+
+**************************************************************
+* DISADD - 2 - ADDRESS -> DISPLAY BUFFER                     *
+**************************************************************
+CONVERT HL TO SEVEN SEGMENT CODE
+AND PUT IN ADDRESS DISPLAY BUFFER.
+
+ENTRY : HL = ADDRESS TO BE DISPLAYED
+EXIT  : NO REGISTERS MODIFIED
+
+**************************************************************
+* DISBYT - 3 - DATA -> DISPLAY BUFFER                        *
+**************************************************************
+CONVERT THE ACC TO SEVEN SEGMENT CODE
+AND PUT IN DATA DISPLAY BUFFER.
+
+ENTRY :  A = DATA DISPLAY BYTE
+EXIT  : NO REGISTERS MODIFIED
+
+**************************************************************
+* CLRBUF - 4 - CLEAR DISPLAY BUFFER                          *
+**************************************************************
+CLEAR DISPLAY BUFFER
+ENTRY: NONE
+
+**************************************************************
+* SCAND - 5 - SCAN DISPLAY                                   *
+**************************************************************
+AS THE DISPLAYS ARE MULTIPLEXED, THE DATA FOR EACH
+DISPLAY MUST BE LATCHED INTO THE DISPLAY SEGMENT
+LATCH IN TURN AND THE CORRESPONDING BIT IN THE DISPLAY
+SCAN LATCH TURNED ON TO DISPLAY THE DATA.
+TWO SHORT DELAYS ARE USED TO ADJUST THE DUTY
+CYCLE AND HENCE DISPLAY BRIGHTNESS.
+
+ENTRY : NONE
+EXIT  : NO REGISTERS MODIFIED
+
+**************************************************************
+* CONBYT - 6 - CONVERT BYTE TO 7 SEGMENT DISPLAY CODE        *
+**************************************************************
+CONVERTS BYTE IN ACC TO SEVEN SEGMENT CODE FOR DISPLAY
+
+ENTRY : A = BYTE TO BE CONVERTED
+EXIT  : H = HI NYBBLE SEVEN SEGMENT CODE
+        L = LO NYBBLE SEVEN SEGMENT CODE
+        A = NOT MODIFIED
+
+**************************************************************
+* CONVHI - 7 - HEXADECIMAL TO SEVEN SEGMENT CODE CONVERSION  *
+**************************************************************
+CONVERTS NYBBLE IN ACC TO SEVEN SEGMENT CODE
+FOR SEVEN SEGMENT DISPLAYS
+CONVHI = CONVERTS HIGH NYBBLE
+CONVLO = CONVERTS LO NYBBLE
+
+ENTRY : A = NYBBLE TO BE CONVERTED
+EXIT  : A = SEVEN SEGMENT CODE
+
+**************************************************************
+* CONVLO - 8 - LO NYBBLE - > DISPLAY CODE                    *
+**************************************************************
+CONVERTS NYBBLE IN ACC TO SEVEN SEGMENT CODE
+FOR SEVEN SEGMENT DISPLAYS
+CONVHI = CONVERTS HIGH NYBBLE
+CONVLO = CONVERTS LO NYBBLE
+
+ENTRY : A = NYBBLE TO BE CONVERTED
+EXIT  : A = SEVEN SEGMENT CODE
+
+**************************************************************
+* SKEYIN - 9 - SCAN DISPLAY UNTIL KEY PRESS                  *
+**************************************************************
+ENTRY : NONE
+EXIT  : A = KEY VALUE 00H TO 1FH
+        FLAG REGISTER MODIFIED
+
+**************************************************************
+* SKEYRL - 10 - SCAN DISPLAY UNTIL KEY RELEASE               *
+**************************************************************
+ENTRY : NONE
+EXIT  : NONE
+
+**************************************************************
+* KEYIN - 11 - WAIT FOR KEY PRESS                            *
+**************************************************************
+ENTRY : NONE
+EXIT  : A = KEY VALUE 00H TO 1FH
+        FLAG REGISTER MODIFIED
+
+**************************************************************
+* KEYREL - 12 - WAIT FOR KEY RELEASE                         *
+**************************************************************
+ENTRY : NONE
+EXIT  : NONE
+
+**************************************************************
+* MENU - 13 - SELECT ENTRY FROM MENU                         *
+**************************************************************
+COMPARES ACC AGAINST TABLE OF ELEMENTS,
+IF FOUND JUMP TO ADDRESS CORRESPONDING TO
+THAT ELEMENT, RETURNS IF ELEMENT NOT FOUND.
+ENTRY :  A = ELEMENT TO LOOK FOR
+         HL = POINTS TO TABLE
+EXIT  :  ELEMENT NOT FOUND
+         HL HOLDS ADDRESS OF LAST ELEMENT
+         ELEMENT FOUND
+         CONTROL PASSES TO JUMP ADDRESS WITH
+         RETURN ADDRESS OF MENU CALL ON STACK
+
+**************************************************************
+* CHKSUM - 14 - CALCULATE CHECKSUM                           *
+**************************************************************
+CALCULATES CHECKSUM BETWEEN START AND END (INCLUSIVE)
+
+ENTRY : HL = START OF BLOCK TO SUM
+        DE = END OF BLOCK TO SUM
+EXIT  : A =  CHECKSUM
+        FLAG REGISTER MODIFIED
+
+**************************************************************
+* MUL16 - 15 - 16 BIT MULTIPLICATION                         *
+**************************************************************
+16 BIT MULTIPLY
+ENTRY : HL = MULTIPLICAND (MPD)
+        DE = MULTIPLIER (MPR)
+EXIT : HL = RESULT
+FROM ZAKS 'PROGRAMMING THE Z80'
+
+**************************************************************
+* RAND - 16 - GENERATE RANDOM NUMBER                         *
+**************************************************************
+GENERATE AN 16 BIT RANDOM NUMBER
+USING LINEAR CONGRUENTIAL METHOD.
+Rn+1 = (aRn+c) MOD m
+REFRESH REGISTER USED FOR Rn AND c
+ENTRY : NONE
+EXIT  : HL = RANDOM WORD
+NO REGISTERS MODIFIED
+
+**************************************************************
+* INDEXB - 17 - INDEX INTO BYTE TABLE                        *
+**************************************************************
+USE 8 BIT INDEX TO ACCESS BYTE LOOKUP TABLE
+ENTRY : A = NUMBER OF ELEMENT IN TABLE
+        HL = ADDRESS OF LOOK UP TABLE
+EXIT  : HL = ADDRESS OF ELEMENT A
+
+**************************************************************
+* INDEXW - 18 - INDEX INTO WORD TABLE                        *
+**************************************************************
+USE 8 BIT INDEX TO ACCESS WORD LOOK UP TABLE
+ENTRY : A = NUMBER OF ELEMENT IN TABLE
+        HL = ADDRESS OF LOOK UP TABLE
+EXIT  : HL = ADDRESS OF 2 BYTE ELEMENT A
+
+**************************************************************
+* MUSIC - 19 - PLAY MUSIC TABLE                              *
+**************************************************************
+SEQUENCES THROUGH A TABLE OF NOTES
+1EH = REPEAT TUNE UNTIL RESET
+1FH = PLAY ONCE AND RETURN
+ENTRY : HL = ADDRESS OF NOTE TABLE
+EXIT  : NO REGISTERS MODIFIED
+
+**************************************************************
+* TONE - 20 - PLAY A NOTE                                    *
+**************************************************************
+ENTRY : A = PERIOD/2 OF NOTE
+        HL = DURATION/2 OF NOTE
+EXIT  : NO REGISTERS MODIFIED
+
+**************************************************************
+* BEEP - 21 - KEY ENTRY BEEP                                 *
+**************************************************************
+A SHORT BEEP ON THE SPEAKER
+
+ENTRY : NONE
+EXIT  : NONE
+
+**************************************************************
+* SKATE - 22 - SCAN 8X8 DISPLAY                              *
+**************************************************************
+PUT THE 8 RAM LOCATIONS POINTED TO
+BY HL ON THE 8X8 DISPLAY,LOW BYTE
+ON TOP ROW.
+ROUTINE PERIOD IS 500uS
+PULSE WIDTH 15uS  GIVES 3% DUTY
+
+ENTRY : HL = ADDRESS OF 8X8 BUFFER
+EXIT  : NO REGISTERS MODIFIED
+
+**************************************************************
+* TXDATA - 23 - TRANSMIT SERIAL BYTE                         *
+**************************************************************
+TRANSMIT BYTE SERIALLY ON DOUT
+
+ENTRY : A = BYTE TO TRANSMIT
+EXIT  : NO REGISTERS MODIFIED
+
+**************************************************************
+* RXDATA - 24 - RECEIVE SERIAL BYTE                          *
+**************************************************************
+RECEIVE SERIAL BYTE FROM DIN
+
+ENTRY : NONE
+EXIT  : A= RECEIVED BYTE IF CARRY CLEAR
+REGISTERS MODIFIED A AND F
+
+**************************************************************
+* ASCHEX - 25 - ASCII CODE -> HEX                            *
+**************************************************************
+CONVERTS ASCII 0-9,A-F INTO HEX LSN
+
+ENTRY : A= ASCII 0-9,A-F
+EXIT  : A= HEX 0-F IN LSN
+A AND F REGISTERS MODIFIED
+
+**************************************************************
+* WWATCH - 26 - WRITE TO SMART WATCH                         *
+**************************************************************
+ENTRY : NONE
+THE DATA TO WRITE TO THE SMARTWATCH
+MUST BE IN SWREG0 - SWREG7
+EXIT : NO WORKING REGISTERS MODIFIED
+(ALTERNATE SET MODIFIED)
+GET DATA TO WRITE TO WATCH
+
+**************************************************************
+* RWATCH - 27 - READ FROM SMART WATCH                        *
+**************************************************************
+ENTRY : NONE
+EXIT  : NO WORKING REGISTERS MODIFIED
+        (ALTERNATE SET MODIFIED)
+CONTENTS OF SMARTWATCH WRITTEN TO SWREG0 - SWREG7
+
+**************************************************************
+* ONESEC- 28 - ONE SECOND DELAY USING SMARTWATCH             *
+**************************************************************
+ENTRY : NONE
+EXIT  : NONE MODIFIED
+
+**************************************************************
+* RLSTEP - 29 - RELAY SEQUENCER                              *
+**************************************************************
+SEQUENCES RELAYS ON RELAY BOARD
+USES TWO BYTES TO SPECIFY OUTPUT DATA AND DELAY TIME
+DELAY TIME BYTE ALSO DETERMINES IF SEQUENCE IS TO 
+STOP OR REPEAT.
+TABLE:
+<BYTE1>,<BYTE2>
+BYTE1 = DATA TO GO TO OUTPUT LATCH (USES PORT IO1)
+BYTE2 = FF - REPEAT
+        00 - FINISHED
+ENTRY : HL POINTS TO TABLE OF OUTPUT DATA
+EXIT  : NONE MODIFIED
+
+**************************************************************
+* DELONE - 30 - ONE SECOND DELAY LOOP                        *
+**************************************************************
+ENTRY : NONE
+EXIT  : FLAG REGISTER MODIFIED
+
+**************************************************************
+* SCANKEY - 31 - SCAN THE KEYBOARD                           *
+**************************************************************
+USE THE HARDWARE OR SOFTWARE SCANNED KEYBOARD
+
+BIT 7 NOT USED
+BIT 6 SHIFT KEY. HIGH IF SHIFT KEY PRESSED
+
+BIT 5 DATA AVAILABLE FLAG HIGH IF KEY PRESSED
+BITS 4 -0 KEY CODE
+
+SOFTWARE SCANNED KEYBOARD
+USE DISPLAY SCAN DRIVERS FOR COLUMNS
+AND KEYBOARD BUFFER AS ROWS.
+MAKE EACH DATA LINE HIGH IN TURN AND CHECK
+IF EACH INDIVIDUAL PUSHBUTTON IS PRESSED.
+
+ENTRY : NONE
+EXIT  : A = 00H IF NO KEY DETECTED
+        A = DETECTED KEY BITS 0-4
+            BIT 5 = KEY AVAILABLE
+            BIT 6 = SHIFT KEY PUSHED
+
+**************************************************************
+* INTELH - 32 - RECEIVE INTEL HEX FILE                       *
+**************************************************************
+
+**************************************************************
+* SPLIT - 33 - SEPARATE A BYTE INTO NYBBLES                  *
+**************************************************************
+SEPARATES A BYTE INTO TWO
+RIGHT JUSTIFIED NYBBLES
+
+ENTRY : A = BYTE TO BE SEPARATED
+EXIT  : H = MSN
+        L = LSN
+
+**************************************************************
+* SNDMSG - 34 - SND ZERO TERMINATED STRING TO SERIAL PORT    *
+**************************************************************
+SENDS A ZERO TERMINATED STRING OR 
+255 CHARACTERS MAX. OUT THE SERIAL PORT
+
+ENTRY : HL = POINTER TO ZERO TERMINATED STRING
+EXIT  : SAME AS ENTRY
+
+**************************************************************
+* BITASC - 35 - CONVERT A BYTE INTO AN ASCII STRING          *
+**************************************************************
+DESCRIPTION : CONVERTS A BYTE, STARTING AT BIT 7,
+INTO A STRING OF ASCII ONES AND ZEROES.
+
+ENTRY :  A = BINARY TO CONVERT
+        HL = CHARACTER BUFFER ADDRESS
+EXIT :  HL = POINTS TO LAST CHARACTER+1
+
+MODIFIES : NONE
+
+**************************************************************
+* WRDASC - 36 - CONVERT A WORD TO ASCII                      *
+**************************************************************
+CONVERT A WORD,A BYTE OR A NYBBLE TO ASCII
+
+ENTRY :  WRDASC           DE = WORD TO CONVERT
+         BYTASC            A = BYTE TO CONVERT
+         NYBASC (B3-B0) OF A = NYBBLE TO CONVERT
+         HL = CHARACTER BUFFER ADDRESS
+EXIT  :  HL = POINTS TO LAST CHARACTER+1
+         AF IS MODIFIED
+
+**************************************************************
+* BYTASC - 37 - CONVERT A BYTE TO ASCII                      *
+**************************************************************
+
+**************************************************************
+* NYBASC - 38 - CONVERT A NYBBLE TO ASCII                    *
+**************************************************************
+
+**************************************************************
+* PCBTYP - 39 - RETURNS BOARD TYPE, SC OR TEC-1F             *
+**************************************************************
+RETURNS THE TYPE OF BOARD THE MONITOR IS BUILT FOR
+ENTRY = NONE
+EXIT: HL -> 'SC-1'    ACCA = 01H
+            'TEC-1F'  ACCA = 02H
+
+**************************************************************
+* PRNTSZ - 40 - INLINE SERIAL PRINT STRING                   *
+**************************************************************
+DESCRIPTION: PRINT AN-INLINE, ZERO TERMINATED STRING
+PUT THE STRING IN THE CODE LIKE THE EXAMPLE BELOW
+THE ROUTINE SENDS THE STRING FROM THE RETURN ADDRESS,
+(THE ADDRESS PUT ON THE STACK AS THE RETURN ADDRESS 
+FROM THE 'CALL PRNTSZ') TO THE ZERO TERMINATOR.
+THEN JUMPS TO THE 'NEXT INSTRUCTION ADDRESS' (AFTER 
+THE ZERO TERMINATOR) TO RESUME THE PROGRAM. 
+
+CALL PRNTSZ
+.DB  "STRING TO PRINT",0
+NEXT INSTRUCTION
+
+**************************************************************
+* KBDTYP - 41 - RETURNS KEYBOARD TYPE                        *
+**************************************************************
+RETURNS THE TYPE OF KEYBOARD USED
+ENTRY = NONE
+EXIT: HL -> KEYBOARD TYPE STRING
+      ACCA = 01H MM74C923 HARDWARE ENCODER
+      ACCA = 02H SOFTWARE SCANNED
+
+**************************************************************
+* UPDATE - 42 - UPDATE DISPLAY AND MODE DEC POINT SEGMENTS   *
+**************************************************************
+UPDATE THE DISPLAY BUFFER WITH THE 
+CURRENT ADDRESS, THE DATA AT THE CURRENT ADDRESS
+AND SET THE DECIMAL POINTS TO
+ADDRESS OR DATA MODE
+
+ENTRY : NONE
+EXIT  : MODIFIES A
+
+**************************************************************
+* VARRAM - 43 - RETURN BASE VARIABLE ADDRESS                 *
+**************************************************************
+RETURN THE BASE ADDRESS OF RAM VARIABLES
+
+ENTRY : NONE
+EXIT  : HL
+
+**************************************************************
+* SERINI - 44 - INITIALISE BIT BANG SERIAL PORT              *
+**************************************************************
+BIT BANG SERIAL PORT INITIALISATION
+SET THE SERIAL TRANSMIT PIN HIGH SO THE 
+HOST CAN SEE THAT WE ARE PREPARING TO TRANSMIT
+ 
+ENTRY : HL = BAUD RATE
+        HL = 0 USE EXISTING BAUD CONSTANT
+EXIT  : HL PRESERVED
+        AF MODIFIED
+
+**************************************************************
+* SCBUG - 45 - SCBUG SERIAL MONITOR                          *
+**************************************************************
+PRESS THE FUNCTION KEY TWICE TO START THE MONITOR
+COMMS PARAMETERS ARE 4800,n,8,2
+
+**************************************************************
